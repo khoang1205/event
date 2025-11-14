@@ -1,0 +1,14 @@
+C:\Users\ACER\Desktop\bingo\laytoado\bin\Debug\net8.0\laytoado.exe
+C:\Users\ACER\Desktop\bingo\laytoado\bin\Debug\net8.0\laytoado.deps.json
+C:\Users\ACER\Desktop\bingo\laytoado\bin\Debug\net8.0\laytoado.runtimeconfig.json
+C:\Users\ACER\Desktop\bingo\laytoado\bin\Debug\net8.0\laytoado.dll
+C:\Users\ACER\Desktop\bingo\laytoado\bin\Debug\net8.0\laytoado.pdb
+C:\Users\ACER\Desktop\bingo\laytoado\obj\Debug\net8.0\laytoado.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ACER\Desktop\bingo\laytoado\obj\Debug\net8.0\laytoado.AssemblyInfoInputs.cache
+C:\Users\ACER\Desktop\bingo\laytoado\obj\Debug\net8.0\laytoado.AssemblyInfo.cs
+C:\Users\ACER\Desktop\bingo\laytoado\obj\Debug\net8.0\laytoado.csproj.CoreCompileInputs.cache
+C:\Users\ACER\Desktop\bingo\laytoado\obj\Debug\net8.0\laytoado.dll
+C:\Users\ACER\Desktop\bingo\laytoado\obj\Debug\net8.0\refint\laytoado.dll
+C:\Users\ACER\Desktop\bingo\laytoado\obj\Debug\net8.0\laytoado.pdb
+C:\Users\ACER\Desktop\bingo\laytoado\obj\Debug\net8.0\laytoado.genruntimeconfig.cache
+C:\Users\ACER\Desktop\bingo\laytoado\obj\Debug\net8.0\ref\laytoado.dll

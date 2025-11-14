@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "dgSpecHash": "EVdffxlf8S8=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\ACER\\Desktop\\bingo\\danhbingo\\danhbingo.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\ACER\\.nuget\\packages\\microsoft.win32.systemevents\\9.0.10\\microsoft.win32.systemevents.9.0.10.nupkg.sha512",
+    "C:\\Users\\ACER\\.nuget\\packages\\opencvsharp4\\4.11.0.20250507\\opencvsharp4.4.11.0.20250507.nupkg.sha512",
+    "C:\\Users\\ACER\\.nuget\\packages\\opencvsharp4.runtime.win\\4.11.0.20250507\\opencvsharp4.runtime.win.4.11.0.20250507.nupkg.sha512",
+    "C:\\Users\\ACER\\.nuget\\packages\\system.drawing.common\\9.0.10\\system.drawing.common.9.0.10.nupkg.sha512",
+    "C:\\Users\\ACER\\.nuget\\packages\\system.memory\\4.6.3\\system.memory.4.6.3.nupkg.sha512"
+  ],
+  "logs": []
+}
