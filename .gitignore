@@ -1,0 +1,60 @@
+### IDE ###
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+### Build ###
+bin/
+obj/
+out/
+publish/
+runtimes/
+packages/
+runtimes/
+*.dll
+*.exe
+### NuGet ###
+*.nupkg
+**/packages/*
+!**/packages/build/
+!**/packages/repositories.config
+
+### Logs / temp ###
+*.log
+*.temp
+*.tmp
+*.cache
+
+### OS ###
+.DS_Store
+Thumbs.db
+desktop.ini
+
+### Crash dumps ###
+*.stackdump
+*.dmp
+
+### Backup ###
+*.bak
+*.old
+
+### OpenCV temp ###
+*.xml
+*.json
+__pycache__/
+
+### Windows Forms auto-generated ###
+*.resources
+*.resx
+*.Designer.cs
+
+### AppSettings local (nếu chứa token) ###
+appsettings.Development.json
+appsettings.local.json
+
+### Ignore Assets nếu muốn ###
+#Assets/Pet/
+#Assets/Template/
+
