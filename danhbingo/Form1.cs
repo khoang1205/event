@@ -896,7 +896,7 @@ const int CLICK_DELAY_MS = 1000;   // delay cố định khi click
         }
         public BossClickResult ClickBossUntilFight(IntPtr hwnd, Action<string> log, double threshold)
         {
-            for (int attempt = 0; attempt < 6; attempt++)   // thử tối đa 6 lần
+            for (int attempt = 0; attempt < 2; attempt++)   // thử tối đa 6 lần
             {
                 if (WaitDisappearSimple(hwnd, CurrentPlayerAvatar))
                 {

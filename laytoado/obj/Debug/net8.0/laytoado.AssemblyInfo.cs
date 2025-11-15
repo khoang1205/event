@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("laytoado")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a993c97fde7f0528da6c9a18523e7d0b6afe239b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cda0610aefa047ab4a1636f6791a96106e0031f8")]
 [assembly: System.Reflection.AssemblyProductAttribute("laytoado")]
 [assembly: System.Reflection.AssemblyTitleAttribute("laytoado")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

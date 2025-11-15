@@ -12,3 +12,18 @@ C:\Users\ACER\Desktop\bingo\laytoado\obj\Debug\net8.0\refint\laytoado.dll
 C:\Users\ACER\Desktop\bingo\laytoado\obj\Debug\net8.0\laytoado.pdb
 C:\Users\ACER\Desktop\bingo\laytoado\obj\Debug\net8.0\laytoado.genruntimeconfig.cache
 C:\Users\ACER\Desktop\bingo\laytoado\obj\Debug\net8.0\ref\laytoado.dll
+E:\Game\VPT\New folder\laytoado\bin\Debug\net8.0\laytoado.exe
+E:\Game\VPT\New folder\laytoado\bin\Debug\net8.0\laytoado.deps.json
+E:\Game\VPT\New folder\laytoado\bin\Debug\net8.0\laytoado.runtimeconfig.json
+E:\Game\VPT\New folder\laytoado\bin\Debug\net8.0\laytoado.dll
+E:\Game\VPT\New folder\laytoado\bin\Debug\net8.0\laytoado.pdb
+E:\Game\VPT\New folder\laytoado\obj\Debug\net8.0\laytoado.GeneratedMSBuildEditorConfig.editorconfig
+E:\Game\VPT\New folder\laytoado\obj\Debug\net8.0\laytoado.AssemblyInfoInputs.cache
+E:\Game\VPT\New folder\laytoado\obj\Debug\net8.0\laytoado.AssemblyInfo.cs
+E:\Game\VPT\New folder\laytoado\obj\Debug\net8.0\laytoado.csproj.CoreCompileInputs.cache
+E:\Game\VPT\New folder\laytoado\obj\Debug\net8.0\laytoado.sourcelink.json
+E:\Game\VPT\New folder\laytoado\obj\Debug\net8.0\laytoado.dll
+E:\Game\VPT\New folder\laytoado\obj\Debug\net8.0\refint\laytoado.dll
+E:\Game\VPT\New folder\laytoado\obj\Debug\net8.0\laytoado.pdb
+E:\Game\VPT\New folder\laytoado\obj\Debug\net8.0\laytoado.genruntimeconfig.cache
+E:\Game\VPT\New folder\laytoado\obj\Debug\net8.0\ref\laytoado.dll

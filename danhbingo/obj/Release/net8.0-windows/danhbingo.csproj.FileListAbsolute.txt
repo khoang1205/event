@@ -25,3 +25,31 @@ C:\Users\ACER\Desktop\bingo\danhbingo\obj\Release\net8.0-windows\refint\danhbing
 C:\Users\ACER\Desktop\bingo\danhbingo\obj\Release\net8.0-windows\danhbingo.pdb
 C:\Users\ACER\Desktop\bingo\danhbingo\obj\Release\net8.0-windows\danhbingo.genruntimeconfig.cache
 C:\Users\ACER\Desktop\bingo\danhbingo\obj\Release\net8.0-windows\ref\danhbingo.dll
+E:\Game\VPT\New folder\danhbingo\bin\Release\net8.0-windows\danhbingo.exe
+E:\Game\VPT\New folder\danhbingo\bin\Release\net8.0-windows\danhbingo.deps.json
+E:\Game\VPT\New folder\danhbingo\bin\Release\net8.0-windows\danhbingo.runtimeconfig.json
+E:\Game\VPT\New folder\danhbingo\bin\Release\net8.0-windows\danhbingo.dll
+E:\Game\VPT\New folder\danhbingo\bin\Release\net8.0-windows\danhbingo.pdb
+E:\Game\VPT\New folder\danhbingo\bin\Release\net8.0-windows\Microsoft.Win32.SystemEvents.dll
+E:\Game\VPT\New folder\danhbingo\bin\Release\net8.0-windows\OpenCvSharp.dll
+E:\Game\VPT\New folder\danhbingo\bin\Release\net8.0-windows\System.Drawing.Common.dll
+E:\Game\VPT\New folder\danhbingo\bin\Release\net8.0-windows\System.Private.Windows.Core.dll
+E:\Game\VPT\New folder\danhbingo\bin\Release\net8.0-windows\runtimes\win\lib\net8.0\Microsoft.Win32.SystemEvents.dll
+E:\Game\VPT\New folder\danhbingo\bin\Release\net8.0-windows\runtimes\win-x64\native\OpenCvSharpExtern.dll
+E:\Game\VPT\New folder\danhbingo\bin\Release\net8.0-windows\runtimes\win-x64\native\opencv_videoio_ffmpeg4110_64.dll
+E:\Game\VPT\New folder\danhbingo\bin\Release\net8.0-windows\runtimes\win-x86\native\OpenCvSharpExtern.dll
+E:\Game\VPT\New folder\danhbingo\bin\Release\net8.0-windows\runtimes\win-x86\native\opencv_videoio_ffmpeg4110.dll
+E:\Game\VPT\New folder\danhbingo\obj\Release\net8.0-windows\danhbingo.csproj.AssemblyReference.cache
+E:\Game\VPT\New folder\danhbingo\obj\Release\net8.0-windows\danhbingo.Form1.resources
+E:\Game\VPT\New folder\danhbingo\obj\Release\net8.0-windows\danhbingo.csproj.GenerateResource.cache
+E:\Game\VPT\New folder\danhbingo\obj\Release\net8.0-windows\danhbingo.GeneratedMSBuildEditorConfig.editorconfig
+E:\Game\VPT\New folder\danhbingo\obj\Release\net8.0-windows\danhbingo.AssemblyInfoInputs.cache
+E:\Game\VPT\New folder\danhbingo\obj\Release\net8.0-windows\danhbingo.AssemblyInfo.cs
+E:\Game\VPT\New folder\danhbingo\obj\Release\net8.0-windows\danhbingo.csproj.CoreCompileInputs.cache
+E:\Game\VPT\New folder\danhbingo\obj\Release\net8.0-windows\danhbingo.sourcelink.json
+E:\Game\VPT\New folder\danhbingo\obj\Release\net8.0-windows\danhbingo.csproj.Up2Date
+E:\Game\VPT\New folder\danhbingo\obj\Release\net8.0-windows\danhbingo.dll
+E:\Game\VPT\New folder\danhbingo\obj\Release\net8.0-windows\refint\danhbingo.dll
+E:\Game\VPT\New folder\danhbingo\obj\Release\net8.0-windows\danhbingo.pdb
+E:\Game\VPT\New folder\danhbingo\obj\Release\net8.0-windows\danhbingo.genruntimeconfig.cache
+E:\Game\VPT\New folder\danhbingo\obj\Release\net8.0-windows\ref\danhbingo.dll

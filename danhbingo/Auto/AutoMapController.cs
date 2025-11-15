@@ -191,7 +191,9 @@ namespace danhbingo.Auto
 
             // mở mini map (~)
             Form1.SendTilde(hwnd);
-            Thread.Sleep(500);
+            Thread.Sleep(2000);
+
+            // check xem mini map co mo ko roi han move
 
             // click tọa độ
             Form1.ClickClient(hwnd, x, y);
