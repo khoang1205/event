@@ -59,7 +59,8 @@ namespace danhbingo
             Height = 110,
             Width = 260   
         };
-
+        CheckBox chkHealPlayer = new() { Text = "Heal nhân vật", Checked = true };
+        CheckBox chkHealPet = new() { Text = "Heal pet", Checked = true };
 
         public const byte VK_OEM_3 = 0xC0;   // phím ~
 
@@ -114,9 +115,7 @@ namespace danhbingo
             p.Controls.Add(new Label() { Text = "Chọn cửa sổ:", AutoSize = true }, 0, 0);
             p.Controls.Add(cboWindows, 1, 0);
 
-            p.Controls.Add(new Label() { Text = "Hoặc nhập tên cửa sổ:", AutoSize = true }, 0, 1);
-            p.Controls.Add(txtWindow, 1, 1);
-
+          
             //--------------------------
             // Threshold
             //--------------------------
@@ -135,12 +134,30 @@ namespace danhbingo
             p.Controls.Add(new Label() { Text = "Folder ảnh:", AutoSize = true }, 0, 3);
             p.Controls.Add(cboImageFolder, 1, 3);
 
+            // === Map + Heal chung 1 dòng ===
+            var mapAndHeal = new TableLayoutPanel()
+            {
+                ColumnCount = 2,
+                AutoSize = true,
+            };
 
-            //--------------------------
-            // Map select
-            //--------------------------
+            mapAndHeal.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 260));  // map list
+            mapAndHeal.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));       // heal panel
+
+            // Map list ở cột 0
+            mapAndHeal.Controls.Add(chkMaps, 0, 0);
+
+            // Heal options bên phải
+            var healPanel = new FlowLayoutPanel() { FlowDirection = FlowDirection.TopDown, AutoSize = true };
+            healPanel.Controls.Add(chkHealPlayer);
+            healPanel.Controls.Add(chkHealPet);
+
+            mapAndHeal.Controls.Add(healPanel, 1, 0);
+
+            // Thêm vào UI row 4
             p.Controls.Add(new Label() { Text = "Chọn map:", AutoSize = true }, 0, 4);
-            p.Controls.Add(chkMaps, 1, 4);
+            p.Controls.Add(mapAndHeal, 1, 4);
+
 
             //--------------------------
             // Control
@@ -151,13 +168,13 @@ namespace danhbingo
 
             p.Controls.Add(new Label() { Text = "Điều khiển:", AutoSize = true }, 0, 5);
             p.Controls.Add(rowCtrl, 1, 5);
-
+          
             //--------------------------
             // Status
             //--------------------------
-            p.Controls.Add(new Label() { Text = "Trạng thái:", AutoSize = true }, 0, 6);
-            p.Controls.Add(lblStatus, 1, 6);
-            p.Controls.Add(txtLog, 1, 7);
+            p.Controls.Add(new Label() { Text = "Trạng thái:", AutoSize = true }, 0, 7);
+            p.Controls.Add(lblStatus, 1, 7);
+            p.Controls.Add(txtLog, 1, 8);
 
             Controls.Add(p);
 
@@ -350,10 +367,7 @@ namespace danhbingo
         //===========================================
         string GetWantedWindowTitle()
         {
-            var t = (cboWindows.SelectedItem as string) ?? "";
-            if (!string.IsNullOrWhiteSpace(txtWindow.Text))
-                t = txtWindow.Text.Trim();
-            return t;
+            return (cboWindows.SelectedItem as string) ?? "";
         }
         //===========================================
         // ✅ START BOT
@@ -420,7 +434,7 @@ namespace danhbingo
             btnStart.Enabled = false;
             btnStop.Enabled = true;
             cboWindows.Enabled =
-            txtWindow.Enabled =
+         
             btnRefresh.Enabled =
             btnSave.Enabled =
             cboImageFolder.Enabled =
@@ -432,7 +446,8 @@ namespace danhbingo
             var token = cts.Token;
 
             lblStatus.Text = $"RUNNING... hwnd=0x{hwnd.ToInt64():X} | maps={wantedMaps.Count}";
-
+            bool healMain = chkHealPlayer.Checked;
+            bool healPetMain = chkHealPet.Checked;
             await Task.Run(() =>
             {
                 while (!token.IsCancellationRequested)
@@ -443,13 +458,17 @@ namespace danhbingo
 
                         // bay tới map và quét/đánh
                         AutoMapController.TravelToMap(
-                            hwnd,
-                            map,
-                            Log,
-                            img => PlayerDetector.WaitForPlayerToReach(hwnd, CurrentPlayerAvatar, Log),
-                            this,
-                            token
-                        );
+     hwnd,
+     map,
+     Log,
+     img => PlayerDetector.WaitForPlayerToReach(hwnd, CurrentPlayerAvatar, Log),
+     this,
+     chkHealPlayer.Checked,
+     chkHealPet.Checked,
+     token
+ );
+
+
 
                         if (token.IsCancellationRequested) return;
 
@@ -531,7 +550,7 @@ namespace danhbingo
             btnStop.Enabled = false;
 
             cboWindows.Enabled =
-            txtWindow.Enabled =
+           
             btnRefresh.Enabled =
             btnSave.Enabled =
             cboImageFolder.Enabled =
@@ -851,10 +870,16 @@ namespace danhbingo
         // ===== CLICK BOSS CHÍNH XÁC — KHÔNG RANDOM =====
 const int CLICK_DELAY_MS = 1000;   // delay cố định khi click
         public double CurrentThreshold => (double)nudThreshold.Value;
-        public BossClickResult ScanAndClickBossEx(IntPtr hwnd, Action<string> log, double threshold)
+        public BossClickResult ScanAndClickBossEx(
+     IntPtr hwnd,
+     Action<string> log,
+     double threshold,
+     string mapName)
         {
-            return ClickBossUntilFight(hwnd, log, threshold);
+            return ClickBossUntilFight(hwnd, log, threshold, mapName);
         }
+
+
 
         public static void ClickBossSpam(IntPtr hwnd, int x, int y, Action<string> log)
         {
@@ -896,9 +921,10 @@ const int CLICK_DELAY_MS = 1000;   // delay cố định khi click
             }
             return false;
         }
-        public BossClickResult ClickBossUntilFight(IntPtr hwnd, Action<string> log, double threshold)
+        public BossClickResult ClickBossUntilFight(IntPtr hwnd, Action<string> log, double threshold,string mapname)
         {
-            for (int attempt = 0; attempt < 1; attempt++)   // thử tối đa 6 lần
+            var templates = FilterTemplatesByMap(mapname);
+            for (int attempt = 0; attempt < 2; attempt++)   // thử tối đa 6 lần
             {
                 if (WaitDisappearSimple(hwnd, CurrentPlayerAvatar))
                 {
@@ -910,8 +936,11 @@ const int CLICK_DELAY_MS = 1000;   // delay cố định khi click
                     return BossClickResult.FightStarted;
                 }
 
+                var filtered = FilterTemplatesByMap(mapname);
                 using var frame = CaptureWindowClient(hwnd);
-                var (pt, score, file) = FindBestTemplate(frame, allTemplates, threshold);
+                var (pt, score, file) = FindBestTemplate(frame, filtered, threshold);
+
+
 
                 if (!pt.HasValue)
                 {
@@ -953,8 +982,7 @@ const int CLICK_DELAY_MS = 1000;   // delay cố định khi click
         }
         public static void TryEnableAutoInGame(IntPtr hwnd, Action<string> log)
         {
-            string folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Anh");
-            string autoImg = Path.Combine(folder, "AutoInGame.png");
+            string autoImg = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Anh", "AutoInGame.png");
 
             if (!File.Exists(autoImg))
                 return;
@@ -970,6 +998,37 @@ const int CLICK_DELAY_MS = 1000;   // delay cố định khi click
                 Thread.Sleep(300);
             }
         }
+        public string[] FilterTemplatesByMap(string map)
+        {
+            // Map không có block → trả full
+            if (!MapData.MapBossPrefix.TryGetValue(map, out string prefix))
+                return allTemplates;
+
+            prefix = prefix.ToLower();
+
+            // Kiểm tra folder hiện tại có chứa ảnh boss prefix hay không?
+            bool hasDangerBoss = allTemplates.Any(f =>
+                Path.GetFileNameWithoutExtension(f).ToLower().StartsWith(prefix));
+
+            // Nếu KHÔNG có ảnh trùng NPC trong folder → KHÔNG cần block
+            if (!hasDangerBoss)
+                return allTemplates;
+
+            // Nếu CÓ → filter block boss theo map
+            var filtered = allTemplates
+                .Where(f =>
+                {
+                    string name = Path.GetFileNameWithoutExtension(f).ToLower();
+
+                    // bỏ ảnh boss trùng NPC
+                    return !name.StartsWith(prefix);
+                })
+                .ToArray();
+
+            // fallback nếu lỡ rỗng
+            return filtered.Length == 0 ? allTemplates : filtered;
+        }
+
 
 
     }

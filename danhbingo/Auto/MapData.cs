@@ -38,5 +38,14 @@ namespace danhbingo.Auto
             { "QuyenCoThanh", new() { (563, 334), (563, 334), (606, 256), (606, 256), (532, 184), (532, 184), (406, 157), (406, 157) } },
             { "TienLapThanh", new() { (587, 278), (587, 278), (617, 222), (617, 222), (625, 178), (625, 178), (514, 166), (514, 166) } },
         };
+        public static readonly Dictionary<string, string> MapBossPrefix = new()
+{
+    { "ThienKhungToc", "boss_xathu" },
+    { "BanDiaToc", "boss_cb" },
+    { "LieuVanToc", "boss_nc" },
+    { "LinhVuToc", "boss_dy" },
+    { "HuyenLamToc", "boss_ts" },
+    { "LuuHoaToc", "boss_hs" }
+};
     }
 }

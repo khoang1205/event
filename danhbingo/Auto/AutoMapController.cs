@@ -14,12 +14,15 @@ namespace danhbingo.Auto
     {
         // === ENTRY POINT ===
         public static void TravelToMap(
-     IntPtr hwnd,
-     string mapName,
-     Action<string> log,
-     Func<string, bool> waitPlayer,
-     Form1 f,
-     CancellationToken token)
+      IntPtr hwnd,
+      string mapName,
+      Action<string> log,
+      Func<string, bool> waitPlayer,
+      Form1 f,
+      bool healPlayer,
+      bool healPet,
+      CancellationToken token)
+
         {
             if (token.IsCancellationRequested) return;
 
@@ -44,7 +47,7 @@ namespace danhbingo.Auto
             if (token.IsCancellationRequested) return;
 
             // 4) Explore map
-            ExploreMapAndFight(hwnd, mapName, log, f, token);
+            ExploreMapAndFight(hwnd, mapName, log, f, healPlayer, healPet, token);
         }
 
 
@@ -149,11 +152,14 @@ namespace danhbingo.Auto
 
         // === 3️⃣ DI CHUYỂN & QUÉT BINGO ===
         private static void ExploreMapAndFight(
-       IntPtr hwnd,
-       string mapName,
-       Action<string> log,
-       Form1 f,
-       CancellationToken token)
+    IntPtr hwnd,
+    string mapName,
+    Action<string> log,
+    Form1 f,
+    bool healPlayer,
+    bool healPet,
+    CancellationToken token)
+
         {
             if (!MapData.LocalMapPoints.TryGetValue(mapName, out var movePoints))
             {
@@ -162,20 +168,21 @@ namespace danhbingo.Auto
             }
 
             log($"🚶 Bắt đầu quét map: {mapName}");
-            Form1.HealIfNeeded(hwnd, true, true, log);
+            Form1.HealIfNeeded(hwnd, healPlayer, healPet, log);
+
             foreach (var p in movePoints)
             {
                 if (token.IsCancellationRequested) return;
 
                 // 1) Scan boss trước
-                if (HandleBossScan(hwnd, log, f, token))
+                if (HandleBossScan(hwnd, mapName, log, f, token))
                     continue;
 
                 // 2) Move
-                MoveToPoint(hwnd, p.x, p.y, log, f, token);
+                MoveToPoint(hwnd, p.x, p.y, mapName, log, f, token);
 
                 // 3) Scan boss sau khi move
-                HandleBossScan(hwnd, log, f, token);
+                HandleBossScan(hwnd,mapName, log, f, token);
             }
 
             log($"✨ Đã hoàn tất map {mapName}");
@@ -184,8 +191,10 @@ namespace danhbingo.Auto
 
         private static void MoveToPoint(
      IntPtr hwnd, int x, int y,
+     string mapName,
      Action<string> log, Form1 f,
      CancellationToken token)
+
         {
             if (token.IsCancellationRequested) return;
 
@@ -204,11 +213,13 @@ namespace danhbingo.Auto
             Thread.Sleep(100);
 
             // trong lúc chạy → scan boss liên tục
+            bool loggedNotFound = false;
+
             for (int i = 0; i < 40; i++)
             {
                 if (token.IsCancellationRequested) return;
 
-                var r = f.ScanAndClickBossEx(hwnd, log, f.CurrentThreshold);
+                var r = f.ScanAndClickBossEx(hwnd, log, f.CurrentThreshold, mapName);
 
                 if (r == BossClickResult.FightStarted)
                 {
@@ -217,7 +228,14 @@ namespace danhbingo.Auto
                 }
 
                 if (r == BossClickResult.NotFound)
-                    break;    //  không còn boss → dừng Scan ngay
+                {
+                    if (!loggedNotFound)
+                    {
+                        log("❌ Không thấy boss → tiếp tục di chuyển");
+                        loggedNotFound = true;
+                    }
+                    break;  // DỪNG SCAN — ĐI TIẾP!
+                }
 
                 Thread.Sleep(50);
             }
@@ -225,9 +243,10 @@ namespace danhbingo.Auto
         }
 
         private static bool HandleBossScan(
-      IntPtr hwnd, Action<string> log, Form1 f, CancellationToken token)
+      IntPtr hwnd,string mapName, Action<string> log, Form1 f, CancellationToken token)
         {
-            var r = f.ScanAndClickBossEx(hwnd, log, f.CurrentThreshold);
+            var r = f.ScanAndClickBossEx(hwnd, log, f.CurrentThreshold, mapName);
+
 
             switch (r)
             {
