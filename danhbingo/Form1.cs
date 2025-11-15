@@ -1,4 +1,5 @@
-﻿using danhbingo.Auto;
+﻿using batpet.Auto;
+using danhbingo.Auto;
 using OpenCvSharp;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -16,6 +17,7 @@ namespace danhbingo
         Button btnStart = new() { Text = "Start", Width = 80 };
         Button btnStop = new() { Text = "Stop", Width = 80, Enabled = false };
         public static IntPtr RootWindow;
+        static long _lastHealTime = 0;
         NumericUpDown nudThreshold = new()
         {
             DecimalPlaces = 2,
@@ -896,11 +898,15 @@ const int CLICK_DELAY_MS = 1000;   // delay cố định khi click
         }
         public BossClickResult ClickBossUntilFight(IntPtr hwnd, Action<string> log, double threshold)
         {
-            for (int attempt = 0; attempt < 2; attempt++)   // thử tối đa 6 lần
+            for (int attempt = 0; attempt < 1; attempt++)   // thử tối đa 6 lần
             {
                 if (WaitDisappearSimple(hwnd, CurrentPlayerAvatar))
                 {
                     log("⚔️ Player biến mất → vào combat!");
+
+                    // bật Auto
+                    TryEnableAutoInGame(hwnd, log);
+
                     return BossClickResult.FightStarted;
                 }
 
@@ -921,6 +927,48 @@ const int CLICK_DELAY_MS = 1000;   // delay cố định khi click
 
             log("⚠️ Click max nhưng không vào combat.");
             return BossClickResult.ClickedNoFight;
+        }
+        public static void HealIfNeeded(IntPtr hwnd, bool healPlayer, bool healPet, Action<string> log, int cooldown = 5000)
+        {
+            long now = Environment.TickCount64;
+
+            if (now - _lastHealTime < cooldown)
+                return;
+
+            _lastHealTime = now;
+
+            if (healPlayer)
+            {
+                ClickClient(hwnd, 131, 23);
+                log("💚 Heal nhân vật");
+                Thread.Sleep(150);
+            }
+
+            if (healPet)
+            {
+                ClickClient(hwnd, 114, 87);
+                log("💙 Heal pet");
+                Thread.Sleep(150);
+            }
+        }
+        public static void TryEnableAutoInGame(IntPtr hwnd, Action<string> log)
+        {
+            string folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Anh");
+            string autoImg = Path.Combine(folder, "AutoInGame.png");
+
+            if (!File.Exists(autoImg))
+                return;
+
+            // thử click auto trong 1.2s
+            for (int i = 0; i < 4; i++)
+            {
+                if (ImageHelper.ClickImage(hwnd, autoImg, 0.65, log))
+                {
+                    log("⚙️ Bật AutoInGame!");
+                    return;
+                }
+                Thread.Sleep(300);
+            }
         }
 
 

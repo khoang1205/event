@@ -33,6 +33,9 @@
         }
       },
       "OpenCvSharp4/4.11.0.20250507": {
+        "dependencies": {
+          "System.Memory": "4.6.3"
+        },
         "runtime": {
           "lib/net6.0/OpenCvSharp.dll": {
             "assemblyVersion": "1.0.0.0",
@@ -78,7 +81,8 @@
             "fileVersion": "9.0.1025.47506"
           }
         }
-      }
+      },
+      "System.Memory/4.6.3": {}
     }
   },
   "libraries": {
@@ -114,6 +118,13 @@
       "sha512": "sha512-FDakPhIcxHnhslLiz4ZQ+ALpHRpCU3zOep9Mcq+4hL23XwQrzmgJNYvf1tH4kJ/V36wO/ZhRr8nOfiz26P3wKg==",
       "path": "system.drawing.common/9.0.10",
       "hashPath": "system.drawing.common.9.0.10.nupkg.sha512"
+    },
+    "System.Memory/4.6.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-qdcDOgnFZY40+Q9876JUHnlHu7bosOHX8XISRoH94fwk6hgaeQGSgfZd8srWRZNt5bV9ZW2TljcegDNxsf+96A==",
+      "path": "system.memory/4.6.3",
+      "hashPath": "system.memory.4.6.3.nupkg.sha512"
     }
   }
 }

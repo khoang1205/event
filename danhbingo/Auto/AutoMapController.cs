@@ -162,7 +162,7 @@ namespace danhbingo.Auto
             }
 
             log($"🚶 Bắt đầu quét map: {mapName}");
-
+            Form1.HealIfNeeded(hwnd, true, true, log);
             foreach (var p in movePoints)
             {
                 if (token.IsCancellationRequested) return;
@@ -204,19 +204,24 @@ namespace danhbingo.Auto
             Thread.Sleep(100);
 
             // trong lúc chạy → scan boss liên tục
-            for (int i = 0; i < 40; i++) // ~2s
+            for (int i = 0; i < 40; i++)
             {
                 if (token.IsCancellationRequested) return;
 
                 var r = f.ScanAndClickBossEx(hwnd, log, f.CurrentThreshold);
-                if (r == Form1.BossClickResult.FightStarted)
+
+                if (r == BossClickResult.FightStarted)
                 {
                     WaitAppearLoop(hwnd, Form1.CurrentPlayerAvatar, log, token);
                     return;
                 }
 
+                if (r == BossClickResult.NotFound)
+                    break;    //  không còn boss → dừng Scan ngay
+
                 Thread.Sleep(50);
             }
+
         }
 
         private static bool HandleBossScan(

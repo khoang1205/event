@@ -53,3 +53,4 @@ E:\Game\VPT\New folder\danhbingo\obj\Debug\net8.0-windows\refint\danhbingo.dll
 E:\Game\VPT\New folder\danhbingo\obj\Debug\net8.0-windows\danhbingo.pdb
 E:\Game\VPT\New folder\danhbingo\obj\Debug\net8.0-windows\danhbingo.genruntimeconfig.cache
 E:\Game\VPT\New folder\danhbingo\obj\Debug\net8.0-windows\ref\danhbingo.dll
+C:\Users\ACER\Desktop\bingo\danhbingo\obj\Debug\net8.0-windows\danhbingo.sourcelink.json

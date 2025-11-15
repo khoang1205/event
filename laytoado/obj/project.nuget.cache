@@ -1,13 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "WoMuAvVoGgk=",
+  "dgSpecHash": "jcRc0ZpkVD0=",
   "success": true,
-  "projectFilePath": "E:\\Game\\VPT\\New folder\\laytoado\\laytoado.csproj",
-  "expectedPackageFiles": [
-    "C:\\Users\\minhp\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.22\\microsoft.windowsdesktop.app.ref.8.0.22.nupkg.sha512",
-    "C:\\Users\\minhp\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.22\\microsoft.netcore.app.ref.8.0.22.nupkg.sha512",
-    "C:\\Users\\minhp\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.22\\microsoft.aspnetcore.app.ref.8.0.22.nupkg.sha512",
-    "C:\\Users\\minhp\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\8.0.22\\microsoft.netcore.app.host.win-x64.8.0.22.nupkg.sha512"
-  ],
+  "projectFilePath": "C:\\Users\\ACER\\Desktop\\bingo\\laytoado\\laytoado.csproj",
+  "expectedPackageFiles": [],
   "logs": []
 }
