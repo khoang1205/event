@@ -32,7 +32,8 @@ namespace danhbingo.Auto
             SelectMapAndFly(hwnd, mapName, log);
 
             // 2) Chờ player biến mất (load map)
-            bool gone = WaitPlayerDisappearForMapChange(hwnd, log);
+            bool gone = WaitPlayerDisappearForMapChange(hwnd, log, token);
+
 
 
             if (!gone)
@@ -109,12 +110,14 @@ namespace danhbingo.Auto
                 log($"⚠️ Không tìm thấy tọa độ map {mapName}");
             }
         }
-       public static bool WaitPlayerDisappearForMapChange(IntPtr hwnd, Action<string> log)
+        public static bool WaitPlayerDisappearForMapChange(IntPtr hwnd, Action<string> log, CancellationToken token)
+
         {
             var sw = Stopwatch.StartNew();
 
             while (sw.ElapsedMilliseconds < 1000) // tối đa 1.5s là đủ
             {
+                Form1.CheckStop(token);
                 bool visible = PlayerDetector.IsPlayerVisible(hwnd, Form1.CurrentPlayerAvatar, 0.80);
 
                 if (!visible)
@@ -163,6 +166,7 @@ namespace danhbingo.Auto
         {
             if (!MapData.LocalMapPoints.TryGetValue(mapName, out var movePoints))
             {
+                Form1.CheckStop(token);
                 log($"⚠️ Không có toạ độ mini map cho {mapName}");
                 return;
             }
@@ -196,6 +200,7 @@ namespace danhbingo.Auto
      CancellationToken token)
 
         {
+            Form1.CheckStop(token);
             if (token.IsCancellationRequested) return;
 
             // mở mini map (~)
@@ -218,8 +223,8 @@ namespace danhbingo.Auto
             for (int i = 0; i < 40; i++)
             {
                 if (token.IsCancellationRequested) return;
-
-                var r = f.ScanAndClickBossEx(hwnd, log, f.CurrentThreshold, mapName);
+                Form1.CheckStop(token);
+                var r = f.ScanAndClickBossEx(hwnd, log, f.CurrentThreshold, mapName,token);
 
                 if (r == BossClickResult.FightStarted)
                 {
@@ -245,7 +250,7 @@ namespace danhbingo.Auto
         private static bool HandleBossScan(
       IntPtr hwnd,string mapName, Action<string> log, Form1 f, CancellationToken token)
         {
-            var r = f.ScanAndClickBossEx(hwnd, log, f.CurrentThreshold, mapName);
+            var r = f.ScanAndClickBossEx(hwnd, log, f.CurrentThreshold, mapName, token);
 
 
             switch (r)
@@ -253,6 +258,7 @@ namespace danhbingo.Auto
                 case Form1.BossClickResult.FightStarted:
                     WaitAppearLoop(hwnd, Form1.CurrentPlayerAvatar, log, token);
                     Thread.Sleep(300);
+
                     return true;   // có combat → dừng xử lý point
 
                 case Form1.BossClickResult.ClickedNoFight:
@@ -274,7 +280,7 @@ namespace danhbingo.Auto
             var bingoFiles = Directory.GetFiles(bingoFolder, "*.png")
                 .Where(f => Path.GetFileName(f).ToLower().Contains("bingo")).ToArray();
 
-            using var frame = Form1.CaptureWindowClient(hwnd);
+            using var frame = ImageHelper.CaptureWindowClient(hwnd);
             bool found = false;
 
             foreach (var f in bingoFiles)
@@ -318,10 +324,10 @@ namespace danhbingo.Auto
             }
         }
         private static bool WaitAppearLoop(
-     IntPtr hwnd,
-     string avatar,
-     Action<string> log,
-     CancellationToken token)
+      IntPtr hwnd,
+      string avatar,
+      Action<string> log,
+      CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
@@ -329,13 +335,23 @@ namespace danhbingo.Auto
                 if (ok)
                 {
                     log("✅ Nhân vật đã xuất hiện lại!");
+
+                    // ⭐ HEAL SAU TRẬN DÙNG HealIfNeeded
+                    Form1.HealIfNeeded(
+                        hwnd,
+                       Form1.fInstance.HealPlayerOption,
+Form1.fInstance.HealPetOption,
+                        log
+                    );
+
                     return true;
                 }
 
-                Thread.Sleep(1000);
+                Thread.Sleep(200);
             }
             return false;
         }
+
 
         private static string GetNextMap(string current, Form1 f)
         {

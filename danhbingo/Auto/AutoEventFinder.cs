@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.IO;
 using System.Threading;
+using batpet.Auto;
 
 namespace danhbingo.Auto
 {
@@ -9,7 +10,7 @@ namespace danhbingo.Auto
     {
         public static void ScanAndClickBingo(IntPtr hwnd, string[] templates, double threshold, Action<string> log)
         {
-            using var bmp = Form1.CaptureWindowClient(hwnd);
+            using var bmp = ImageHelper.CaptureWindowClient(hwnd);
             var match = Form1.FindBestTemplate(bmp, templates, threshold);
 
             if (match.found.HasValue)

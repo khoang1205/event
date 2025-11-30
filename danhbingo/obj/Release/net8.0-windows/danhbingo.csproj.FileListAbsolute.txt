@@ -53,3 +53,5 @@ E:\Game\VPT\New folder\danhbingo\obj\Release\net8.0-windows\refint\danhbingo.dll
 E:\Game\VPT\New folder\danhbingo\obj\Release\net8.0-windows\danhbingo.pdb
 E:\Game\VPT\New folder\danhbingo\obj\Release\net8.0-windows\danhbingo.genruntimeconfig.cache
 E:\Game\VPT\New folder\danhbingo\obj\Release\net8.0-windows\ref\danhbingo.dll
+C:\Users\ACER\Desktop\bingo\danhbingo\obj\Release\net8.0-windows\danhbingo.MapEditorForm.resources
+C:\Users\ACER\Desktop\bingo\danhbingo\obj\Release\net8.0-windows\danhbingo.sourcelink.json

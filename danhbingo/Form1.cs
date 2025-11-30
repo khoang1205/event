@@ -11,7 +11,8 @@ namespace danhbingo
     {
         ComboBox cboWindows = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 340 };
         TextBox txtWindow = new() { Width = 340, PlaceholderText = "Hoặc gõ tên cửa sổ (nếu không chọn ở dropdown)" };
-
+        public bool HealPlayerOption => chkHealPlayer.Checked;
+        public bool HealPetOption => chkHealPet.Checked;
         Button btnRefresh = new() { Text = "Refresh windows", Width = 140 };
         Button btnSave = new() { Text = "Save", Width = 80 };
         Button btnStart = new() { Text = "Start", Width = 80 };
@@ -86,7 +87,7 @@ namespace danhbingo
 
         static DateTime _lastWorldMapPress = DateTime.MinValue;
         static bool _isWorldMapOpen = false;
-
+        public static Form1 fInstance;
         //------------------------------
         // ===== Constructor =====
         //------------------------------
@@ -105,7 +106,7 @@ namespace danhbingo
                 RowCount = 10,
                 Padding = new Padding(10)
             };
-
+            fInstance = this;
             p.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160));
             p.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
@@ -124,6 +125,16 @@ namespace danhbingo
             rowSetting.Controls.Add(btnSave);
             rowSetting.Controls.Add(new Label() { Text = "Threshold:", AutoSize = true, Padding = new Padding(20, 8, 5, 0) });
             rowSetting.Controls.Add(nudThreshold);
+                Button btnMapEditor = new() { Text = "Map Editor", Width = 120 };
+            rowSetting.Controls.Add(btnMapEditor);
+
+            btnMapEditor.Click += (_, __) =>
+            {
+                new MapEditorForm().ShowDialog();
+                // Reload lại map sau khi thêm
+                LoadMaps();
+            };
+
 
             p.Controls.Add(new Label() { Text = "Thiết lập:", AutoSize = true }, 0, 2);
             p.Controls.Add(rowSetting, 1, 2);
@@ -195,6 +206,7 @@ namespace danhbingo
         {
             LoadWindowList();
             LoadConfig();
+            MapData.Load();
             LoadMaps();
 
             string defaultDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Anh");
@@ -487,6 +499,12 @@ namespace danhbingo
 
 
         }
+        public static void CheckStop(CancellationToken token)
+        {
+            if (token.IsCancellationRequested)
+                throw new OperationCanceledException();
+        }
+
 
         //===========================================
         // ✅ Dò ảnh nhân vật: player_*.png
@@ -499,7 +517,7 @@ namespace danhbingo
         {
             try
             {
-                using var frame = CaptureWindowClient(hwnd);
+                using var frame = ImageHelper.CaptureWindowClient(hwnd);
 
                 string baseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Anh");
 
@@ -632,25 +650,8 @@ namespace danhbingo
         //===========================================
         // ✅ CAPTURE WINDOW (client)
         //===========================================
-        public static System.Drawing.Bitmap CaptureWindowClient(IntPtr hwnd)
-        {
-            if (!GetWindowRect(hwnd, out var r))
-                throw new Exception("GetWindowRect failed");
+      
 
-            int w = Math.Max(1, r.Right - r.Left);
-            int h = Math.Max(1, r.Bottom - r.Top);
-
-            var bmp = new System.Drawing.Bitmap(w, h);
-            using (var g = System.Drawing.Graphics.FromImage(bmp))
-            {
-                var hdc = g.GetHdc();
-                bool ok = PrintWindow(hwnd, hdc, 0);
-                g.ReleaseHdc(hdc);
-                if (!ok)
-                    g.CopyFromScreen(r.Left, r.Top, 0, 0, new System.Drawing.Size(w, h));
-            }
-            return bmp;
-        }
 
         //===========================================
         // ✅ CLICK CLIENT
@@ -871,11 +872,10 @@ namespace danhbingo
 const int CLICK_DELAY_MS = 1000;   // delay cố định khi click
         public double CurrentThreshold => (double)nudThreshold.Value;
         public BossClickResult ScanAndClickBossEx(
-     IntPtr hwnd,
-     Action<string> log,
-     double threshold,
-     string mapName)
+     IntPtr hwnd, Action<string> log,
+     double threshold, string mapName, CancellationToken token)
         {
+            Form1.CheckStop(token);
             return ClickBossUntilFight(hwnd, log, threshold, mapName);
         }
 
@@ -937,7 +937,7 @@ const int CLICK_DELAY_MS = 1000;   // delay cố định khi click
                 }
 
                 var filtered = FilterTemplatesByMap(mapname);
-                using var frame = CaptureWindowClient(hwnd);
+                using var frame = ImageHelper.CaptureWindowClient(hwnd);
                 var (pt, score, file) = FindBestTemplate(frame, filtered, threshold);
 
 
@@ -1029,7 +1029,8 @@ const int CLICK_DELAY_MS = 1000;   // delay cố định khi click
             return filtered.Length == 0 ? allTemplates : filtered;
         }
 
-
+        [DllImport("user32.dll")]
+        static extern IntPtr GetForegroundWindow();
 
     }
 }

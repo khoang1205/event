@@ -27,3 +27,4 @@ E:\Game\VPT\New folder\laytoado\obj\Debug\net8.0\refint\laytoado.dll
 E:\Game\VPT\New folder\laytoado\obj\Debug\net8.0\laytoado.pdb
 E:\Game\VPT\New folder\laytoado\obj\Debug\net8.0\laytoado.genruntimeconfig.cache
 E:\Game\VPT\New folder\laytoado\obj\Debug\net8.0\ref\laytoado.dll
+C:\Users\ACER\Desktop\bingo\laytoado\obj\Debug\net8.0\laytoado.sourcelink.json

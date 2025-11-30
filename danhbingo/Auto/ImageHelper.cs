@@ -38,33 +38,30 @@ namespace batpet.Auto
         /// <summary>
         /// Chụp lại vùng client của cửa sổ game (ưu tiên PrintWindow, fallback CopyFromScreen)
         /// </summary>
-        public static Bitmap CaptureWindow(IntPtr hwnd)
+        public static Bitmap CaptureWindowClient(IntPtr hwnd)
         {
-            if (!GetClientRect(hwnd, out var cr))
+            // Lấy kích thước client (KHÔNG gồm title bar / border)
+            if (!GetClientRect(hwnd, out RECT rc))
                 throw new Exception("GetClientRect failed");
 
-            int w = cr.Right - cr.Left;
-            int h = cr.Bottom - cr.Top;
+            int w = rc.Right - rc.Left;
+            int h = rc.Bottom - rc.Top;
 
-            var bmp = new Bitmap(w, h);
+            Bitmap bmp = new Bitmap(w, h);
 
-            using (var g = Graphics.FromImage(bmp))
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                var hdc = g.GetHdc();
-                bool ok = PrintWindow(hwnd, hdc, PW_CLIENTONLY);
+                IntPtr hdc = g.GetHdc();
+                bool ok = PrintWindow(hwnd, hdc, 0x00000001); // PW_CLIENTONLY
+
                 g.ReleaseHdc(hdc);
 
-                if (!ok)
-                {
-                    // fallback: dùng CopyFromScreen dựa trên client top-left
-                    if (!ClientToScreen(hwnd, out var tl))
-                        throw new Exception("ClientToScreen failed");
-
-                    g.CopyFromScreen(tl.X, tl.Y, 0, 0, new System.Drawing.Size(w, h));
-                }
+                // Nếu PrintWindow fail → trả ảnh đen, nhưng KHÔNG chiếm chuột
+                // vẫn an toàn cho auto
+                return bmp;
             }
-            return bmp;
         }
+
 
         /// <summary>
         /// So khớp ảnh bằng OpenCV Template Matching, trả về điểm cao nhất.
@@ -168,7 +165,7 @@ namespace batpet.Auto
 
         public static bool IsPopupVisible(IntPtr hwnd, string popupImg, double threshold = 0.8)
         {
-            using var frame = CaptureWindow(hwnd);
+            using var frame = CaptureWindowClient(hwnd);
             using var tpl = (Bitmap)Image.FromFile(popupImg);
             var (pt, score) = MatchOnce(frame, tpl, threshold);
             return pt.HasValue && score >= threshold;
@@ -179,7 +176,7 @@ namespace batpet.Auto
      double threshold,
      Action<string>? log = null)
         {
-            using var frame = CaptureWindow(hwnd);
+            using var frame = CaptureWindowClient(hwnd);
             using var tpl = (Bitmap)Image.FromFile(imgPath);
 
             var (pt, score) = MatchMultiScale(frame, tpl, threshold);

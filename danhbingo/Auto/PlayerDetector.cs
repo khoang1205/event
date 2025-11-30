@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Threading;
+using batpet.Auto;
 
 namespace danhbingo.Auto
 {
@@ -11,7 +12,7 @@ namespace danhbingo.Auto
         /// </summary>
         public static bool IsPlayerVisible(IntPtr hwnd, string playerImgPath, double threshold)
         {
-            using var frame = Form1.CaptureWindowClient(hwnd);
+            using var frame = ImageHelper.CaptureWindowClient(hwnd);
             using var tpl = (Bitmap)Image.FromFile(playerImgPath);
             var (pt, score) = Form1.MatchOnce(frame, tpl, threshold);
             return pt.HasValue && score > threshold;
