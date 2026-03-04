@@ -1,10 +1,10 @@
 ﻿using batpet.Auto;
 using danhbingo.Auto;
 using OpenCvSharp;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
-
 namespace danhbingo
 {
     public partial class Form1 : Form
@@ -18,7 +18,9 @@ namespace danhbingo
         Button btnStart = new() { Text = "Start", Width = 80 };
         Button btnStop = new() { Text = "Stop", Width = 80, Enabled = false };
         public static IntPtr RootWindow;
-        static long _lastHealTime = 0;
+        static long _lastHealPlayer = 0;
+        static long _lastHealPet = 0;
+        public static IntPtr GameClickHwnd;
         NumericUpDown nudThreshold = new()
         {
             DecimalPlaces = 2,
@@ -58,7 +60,7 @@ namespace danhbingo
         {
             CheckOnClick = true,
             Height = 110,
-            Width = 260   
+            Width = 260
         };
         CheckBox chkHealPlayer = new() { Text = "Heal nhân vật", Checked = true };
         CheckBox chkHealPet = new() { Text = "Heal pet", Checked = true };
@@ -91,6 +93,13 @@ namespace danhbingo
         //------------------------------
         // ===== Constructor =====
         //------------------------------
+        private static readonly (int dx, int dy)[] AroundOffsets = new[]
+{
+    (0, 0),
+    (0, -10), (0, 10), (-10, 0), (10, 0),
+    (-10, -10), (10, -10), (-10, 10), (10, 10),
+    (0, -20), (0, 20), (-20, 0), (20, 0),
+};
         public Form1()
         {
             Text = "Auto event";
@@ -116,23 +125,23 @@ namespace danhbingo
             p.Controls.Add(new Label() { Text = "Chọn cửa sổ:", AutoSize = true }, 0, 0);
             p.Controls.Add(cboWindows, 1, 0);
 
-          
+
             //--------------------------
             // Threshold
             //--------------------------
             var rowSetting = new FlowLayoutPanel() { FlowDirection = FlowDirection.LeftToRight, AutoSize = true };
             rowSetting.Controls.Add(btnRefresh);
             rowSetting.Controls.Add(btnSave);
-            rowSetting.Controls.Add(new Label() { Text = "Threshold:", AutoSize = true, Padding = new Padding(20, 8, 5, 0) });
-            rowSetting.Controls.Add(nudThreshold);
-                Button btnMapEditor = new() { Text = "Map Editor", Width = 120 };
+           
+            rowSetting.Controls.Add(cboAttackMode);
+            Button btnMapEditor = new() { Text = "Map Editor", Width = 120 };
             rowSetting.Controls.Add(btnMapEditor);
 
             btnMapEditor.Click += (_, __) =>
             {
                 new MapEditorForm().ShowDialog();
-                // Reload lại map sau khi thêm
-                LoadMaps();
+                MapData.Load();   // reload JSON vào runtime
+                LoadMaps();       // reload list UI
             };
 
 
@@ -179,7 +188,7 @@ namespace danhbingo
 
             p.Controls.Add(new Label() { Text = "Điều khiển:", AutoSize = true }, 0, 5);
             p.Controls.Add(rowCtrl, 1, 5);
-          
+
             //--------------------------
             // Status
             //--------------------------
@@ -197,7 +206,7 @@ namespace danhbingo
             btnSave.Click += (_, __) => SaveConfig();
             btnStart.Click += async (_, __) => await StartAsync();
             btnStop.Click += (_, __) => StopBot();
-           
+
         }
         //===========================================
         //  ✅ FORM LOAD
@@ -213,10 +222,27 @@ namespace danhbingo
 
             LoadImageFolders();
 
-
+            cboAttackMode.Items.Clear();
+            cboAttackMode.Items.Add("Click trúng quái");
+            cboAttackMode.Items.Add("Click quanh quái");
+            cboAttackMode.SelectedIndex = 0;
             ReloadImageTemplates();
         }
+      
+        public enum AttackMode
+        {
+            ClickDirect = 0,
+            ClickAround = 1
+        }
 
+        ComboBox cboAttackMode = new()
+        {
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            Width = 220
+        };
+
+        public AttackMode CurrentAttackMode =>
+            cboAttackMode.SelectedIndex == 1 ? AttackMode.ClickAround : AttackMode.ClickDirect;
         //===========================================
         // ✅ LOAD WINDOW LIST
         //===========================================
@@ -386,6 +412,8 @@ namespace danhbingo
         //===========================================
         async Task StartAsync()
         {
+            var runMode = CurrentAttackMode;
+            Form1.GameClickHwnd = hwnd;
             IntPtr rootHwnd = hwnd;
             var winTitle = GetWantedWindowTitle();
             if (string.IsNullOrWhiteSpace(winTitle))
@@ -402,6 +430,7 @@ namespace danhbingo
                 return;
             }
 
+            Form1.RootWindow = rootHwnd;
             // 2) tìm child flash (nếu có)
             IntPtr flashHwnd = FindWindowEx(hwnd, IntPtr.Zero, "MacromediaFlashPlayerActiveX", null);
             if (flashHwnd == IntPtr.Zero)
@@ -410,7 +439,7 @@ namespace danhbingo
                 flashHwnd = FindWindowEx(hwnd, IntPtr.Zero, "WindowClassNN", null);
             if (flashHwnd != IntPtr.Zero) hwnd = flashHwnd;
             Form1.RootWindow = rootHwnd;
-
+            Form1.GameClickHwnd = hwnd;
             // 3) kiểm tra folder ảnh + nạp template
             var imgFolder = ResolveImageFolder();
             if (!Directory.Exists(imgFolder))
@@ -446,7 +475,7 @@ namespace danhbingo
             btnStart.Enabled = false;
             btnStop.Enabled = true;
             cboWindows.Enabled =
-         
+
             btnRefresh.Enabled =
             btnSave.Enabled =
             cboImageFolder.Enabled =
@@ -460,42 +489,57 @@ namespace danhbingo
             lblStatus.Text = $"RUNNING... hwnd=0x{hwnd.ToInt64():X} | maps={wantedMaps.Count}";
             bool healMain = chkHealPlayer.Checked;
             bool healPetMain = chkHealPet.Checked;
-            await Task.Run(() =>
+            try
             {
-                while (!token.IsCancellationRequested)
+                await Task.Run(() =>
                 {
-                    foreach (var map in wantedMaps)
+                    try
                     {
-                        if (token.IsCancellationRequested) return;
-
-                        // bay tới map và quét/đánh
-                        AutoMapController.TravelToMap(
-     hwnd,
-     map,
-     Log,
-     img => PlayerDetector.WaitForPlayerToReach(hwnd, CurrentPlayerAvatar, Log),
-     this,
-     chkHealPlayer.Checked,
-     chkHealPet.Checked,
-     token
- );
-
-
-
-                        if (token.IsCancellationRequested) return;
-
-                        // nghỉ nhẹ giữa các map (1.2s nhưng có kiểm tra token)
-                        for (int i = 0; i < 12; i++)
+                        while (!token.IsCancellationRequested)
                         {
-                            if (token.IsCancellationRequested) return;
-                            Thread.Sleep(100);
+                            foreach (var map in wantedMaps)
+                            {
+                                Form1.CheckStop(token);
+
+                                // bay tới map và quét/đánh
+                                AutoMapController.TravelToMap(
+                                   hwnd,
+    map,
+    Log,
+    img => PlayerDetector.WaitForPlayerToReach(hwnd, CurrentPlayerAvatar, Log),
+    this,
+    chkHealPlayer.Checked,
+    chkHealPet.Checked,
+    runMode,
+    token
+                                );
+
+                                Form1.CheckStop(token);
+
+                                // nghỉ nhẹ giữa các map
+                                for (int i = 0; i < 12; i++)
+                                {
+                                    Form1.CheckStop(token);
+                                    Thread.Sleep(100);
+                                }
+                            }
                         }
                     }
-                }
-            });
+                    catch (OperationCanceledException)
+                    {
+                        Log("🛑 Đã dừng (token canceled).");
+                    }
+                }, token);
+            }
+            catch (OperationCanceledException)
+            {
+                Log("🛑 Background task canceled.");
+            }
+            finally
+            {
+                StopBot(); // luôn chạy lại UI
+            }
 
-            // khi thoát vòng lặp
-            StopBot();
 
 
         }
@@ -568,7 +612,7 @@ namespace danhbingo
             btnStop.Enabled = false;
 
             cboWindows.Enabled =
-           
+
             btnRefresh.Enabled =
             btnSave.Enabled =
             cboImageFolder.Enabled =
@@ -650,7 +694,7 @@ namespace danhbingo
         //===========================================
         // ✅ CAPTURE WINDOW (client)
         //===========================================
-      
+
 
 
         //===========================================
@@ -791,8 +835,84 @@ namespace danhbingo
         }
 
 
+        private BossClickResult ClickBossAroundUntilFight(
+       IntPtr hwnd, Action<string> log, double threshold, string mapname, CancellationToken token, int timeoutMs = 5000)
+        {
+            // Mở rộng phạm vi click xung quanh một chút nếu cần (bạn có thể sửa mảng AroundOffsets ở đầu class Form1)
+            var offsets = AroundOffsets;
 
+            // 1) Scan boss lấy tâm ban đầu
+            var filtered = FilterTemplatesByMap(mapname);
+            using var firstFrame = ImageHelper.CaptureWindowClient(hwnd);
+            var (pt, score, file) = FindBestTemplate(firstFrame, filtered, threshold);
 
+            if (!pt.HasValue)
+                return BossClickResult.NotFound;
+
+            log($"👀 Thấy boss {file} @({pt.Value.X},{pt.Value.Y}) score={score:F2} → Bắt đầu vờn quanh");
+
+            // 2) Click quanh trong timeout
+            var sw = Stopwatch.StartNew();
+            int idx = 0;
+
+            // --- CẤU HÌNH TỐC ĐỘ ---
+            int clickDelay = 400; // Tăng lên 400ms (cũ là 120ms) để chậm hơn
+                                  // -----------------------
+
+            while (sw.ElapsedMilliseconds < timeoutMs && !token.IsCancellationRequested)
+            {
+                CheckStop(token);
+
+                // A. Kiểm tra vào combat chưa
+                if (WaitDisappearSimple(hwnd, CurrentPlayerAvatar))
+                {
+                    log("⚔️ Player biến mất → vào combat!");
+                    Thread.Sleep(800);
+                    EnableAutoInGameDuringCombat(hwnd, log, token);
+                    return BossClickResult.FightStarted;
+                }
+
+                // B. Tính toán tọa độ click xung quanh
+                // Lấy offset từ mảng, dùng phép chia lấy dư để vòng lặp lại mảng offset
+                var (dx, dy) = offsets[idx % offsets.Length];
+
+                // Tọa độ click = Vị trí Boss hiện tại + Offset
+                int clickX = pt.Value.X + dx;
+                int clickY = pt.Value.Y + dy;
+
+                // C. Thực hiện Click
+                ClickClient(hwnd, clickX, clickY);
+                // log($"💫 Click quanh #{idx}: ({clickX},{clickY})"); // Bật log này nếu muốn debug kỹ
+
+                // D. Delay chậm lại (Fix yêu cầu tốc độ)
+                Thread.Sleep(clickDelay);
+
+                idx++;
+
+                // E. Logic Re-scan: Quét lại vị trí Boss thường xuyên hơn
+                // Thay vì 6 lần, ta quét lại mỗi 2 lần click.
+                // Điều này giúp "Click xung quanh" luôn bám theo quái nếu quái di chuyển.
+                if (idx % 2 == 0)
+                {
+                    using var frame = ImageHelper.CaptureWindowClient(hwnd);
+                    var (pt2, _, _) = FindBestTemplate(frame, filtered, threshold);
+
+                    if (pt2.HasValue)
+                    {
+                        pt = pt2; // Cập nhật vị trí mới của boss
+                    }
+                    else
+                    {
+                        // Nếu đang click mà mất dấu boss thì có thể boss chết hoặc bị che
+                        // Ta không return ngay mà để loop chạy tiếp hy vọng tìm lại được ở lần scan sau
+                        // Hoặc bạn có thể break nếu muốn dừng ngay.
+                    }
+                }
+            }
+
+            log("⏱️ Hết thời gian vờn quanh nhưng chưa vào combat.");
+            return BossClickResult.ClickedNoFight;
+        }
         //===========================================
         // ✅ MATCH 1 TEMPLATE
         //   → trả về (point, score)
@@ -869,15 +989,21 @@ namespace danhbingo
             return (bestPt, bestScore, bestFile);
         }
         // ===== CLICK BOSS CHÍNH XÁC — KHÔNG RANDOM =====
-const int CLICK_DELAY_MS = 1000;   // delay cố định khi click
+        const int CLICK_DELAY_MS = 1000;   // delay cố định khi click
         public double CurrentThreshold => (double)nudThreshold.Value;
         public BossClickResult ScanAndClickBossEx(
      IntPtr hwnd, Action<string> log,
-     double threshold, string mapName, CancellationToken token)
+     double threshold, string mapName,
+     AttackMode mode,
+     CancellationToken token)
         {
             Form1.CheckStop(token);
-            return ClickBossUntilFight(hwnd, log, threshold, mapName);
+
+            return mode == AttackMode.ClickAround
+                ? ClickBossAroundUntilFight(hwnd, log, threshold, mapName, token, timeoutMs: 5000)
+                : ClickBossDirectUntilFight(hwnd, log, threshold, mapName, token);
         }
+
 
 
 
@@ -921,26 +1047,23 @@ const int CLICK_DELAY_MS = 1000;   // delay cố định khi click
             }
             return false;
         }
-        public BossClickResult ClickBossUntilFight(IntPtr hwnd, Action<string> log, double threshold,string mapname)
+        private BossClickResult ClickBossDirectUntilFight(
+      IntPtr hwnd, Action<string> log, double threshold, string mapname, CancellationToken token)
         {
             var templates = FilterTemplatesByMap(mapname);
-            for (int attempt = 0; attempt < 2; attempt++)   // thử tối đa 6 lần
+            for (int attempt = 0; attempt < 2; attempt++)
             {
                 if (WaitDisappearSimple(hwnd, CurrentPlayerAvatar))
                 {
                     log("⚔️ Player biến mất → vào combat!");
-
-                    // bật Auto
-                    TryEnableAutoInGame(hwnd, log);
-
+                    Thread.Sleep(1000);
+                    EnableAutoInGameDuringCombat(hwnd, log, token);
                     return BossClickResult.FightStarted;
                 }
 
                 var filtered = FilterTemplatesByMap(mapname);
                 using var frame = ImageHelper.CaptureWindowClient(hwnd);
                 var (pt, score, file) = FindBestTemplate(frame, filtered, threshold);
-
-
 
                 if (!pt.HasValue)
                 {
@@ -949,37 +1072,42 @@ const int CLICK_DELAY_MS = 1000;   // delay cố định khi click
                 }
 
                 log($"🎯 attempt#{attempt + 1}: Boss {file} @({pt.Value.X},{pt.Value.Y}) score={score:F2}");
-
                 ClickClient(hwnd, pt.Value.X, pt.Value.Y);
-                Thread.Sleep(120);  // để nhân vật phản ứng chút
+                Thread.Sleep(120);
             }
 
             log("⚠️ Click max nhưng không vào combat.");
             return BossClickResult.ClickedNoFight;
         }
-        public static void HealIfNeeded(IntPtr hwnd, bool healPlayer, bool healPet, Action<string> log, int cooldown = 5000)
+
+        public static void HealIfNeeded(IntPtr hwnd, bool healPlayer, bool healPet, Action<string> log)
         {
             long now = Environment.TickCount64;
 
-            if (now - _lastHealTime < cooldown)
-                return;
-
-            _lastHealTime = now;
-
-            if (healPlayer)
+            // Heal Main
+            if (healPlayer && now - _lastHealPlayer >= 5000)
             {
+                _lastHealPlayer = now;
                 ClickClient(hwnd, 131, 23);
                 log("💚 Heal nhân vật");
                 Thread.Sleep(150);
+
+                // ⭐ THÊM DÒNG NÀY
+                now = Environment.TickCount64;
             }
 
-            if (healPet)
+            // Heal Pet — dùng cooldown tách biệt + reset sau heal main
+            if (healPet && now - _lastHealPet >= 3000)
             {
-                ClickClient(hwnd, 114, 87);
+                _lastHealPet = now;
+                Thread.Sleep(120); // tránh swallow click
+                ClickClient(hwnd, 114, 85);
                 log("💙 Heal pet");
                 Thread.Sleep(150);
             }
         }
+
+
         public static void TryEnableAutoInGame(IntPtr hwnd, Action<string> log)
         {
             string autoImg = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Anh", "AutoInGame.png");
@@ -987,17 +1115,22 @@ const int CLICK_DELAY_MS = 1000;   // delay cố định khi click
             if (!File.Exists(autoImg))
                 return;
 
-            // thử click auto trong 1.2s
+            const int AUTO_X = 804;
+            const int AUTO_Y = 355;
+
             for (int i = 0; i < 4; i++)
             {
-                if (ImageHelper.ClickImage(hwnd, autoImg, 0.65, log))
+                if (ImageHelper.ClickImage(hwnd, autoImg, 0.9, log))
                 {
-                    log("⚙️ Bật AutoInGame!");
+                    log("⚙️ Bật AutoInGame (ảnh match) → click hard code!");
+                    ClickClient(hwnd, AUTO_X, AUTO_Y);
                     return;
                 }
+
                 Thread.Sleep(300);
             }
         }
+
         public string[] FilterTemplatesByMap(string map)
         {
             // Map không có block → trả full
@@ -1029,8 +1162,45 @@ const int CLICK_DELAY_MS = 1000;   // delay cố định khi click
             return filtered.Length == 0 ? allTemplates : filtered;
         }
 
-        [DllImport("user32.dll")]
-        static extern IntPtr GetForegroundWindow();
+        public static void EnableAutoInGameDuringCombat(IntPtr hwnd, Action<string> log, CancellationToken token)
+        {
+            string autoImg = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Anh", "AutoInGame.png");
 
+            if (!File.Exists(autoImg))
+            {
+                log("⚠️ Không có file AutoInGame.png");
+                return;
+            }
+
+            const int AUTO_X = 804;
+            const int AUTO_Y = 355;
+
+            // Quét tối đa 4 giây (20 lần x 200ms)
+            while (!token.IsCancellationRequested)
+            {
+                // 1) Nếu nhân vật xuất hiện lại → trận đã kết thúc
+                if (PlayerDetector.IsPlayerVisible(hwnd, Form1.CurrentPlayerAvatar, 0.80))
+                {
+                    log("⛔ Nhân vật đã xuất hiện lại — thoát auto-scan.");
+                    return;
+                }
+
+                // 2) Scan tìm nút AutoInGame
+                using var frame = ImageHelper.CaptureWindowClient(hwnd);
+                var (pt, score, _) = Form1.FindBestTemplate(frame, new[] { autoImg }, 0.60);
+
+                if (pt.HasValue)
+                {
+                    log($"🟢 Đã thấy AutoInGame (score={score:F2}) → CLICK HARD CODE");
+                    Form1.ClickClient(hwnd, AUTO_X, AUTO_Y);
+                    Thread.Sleep(150);
+                    return;
+                }
+
+                log("🙈 Chưa thấy AutoInGame — scan tiếp...");
+                Thread.Sleep(150); // nhịp scan nhanh nhưng không quá tốn CPU
+            }
+        }
+     
     }
 }

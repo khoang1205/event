@@ -7,6 +7,7 @@ using System.Drawing;
 using batpet.Auto;
 using System.Diagnostics;
 using static danhbingo.Form1;
+using static OpenCvSharp.Stitcher;
 
 namespace danhbingo.Auto
 {
@@ -14,14 +15,15 @@ namespace danhbingo.Auto
     {
         // === ENTRY POINT ===
         public static void TravelToMap(
-      IntPtr hwnd,
-      string mapName,
-      Action<string> log,
-      Func<string, bool> waitPlayer,
-      Form1 f,
-      bool healPlayer,
-      bool healPet,
-      CancellationToken token)
+        IntPtr hwnd,
+    string mapName,
+    Action<string> log,
+    Func<string, bool> waitPlayer,
+    Form1 f,
+    bool healPlayer,
+    bool healPet,
+    AttackMode mode,
+    CancellationToken token)
 
         {
             if (token.IsCancellationRequested) return;
@@ -48,7 +50,7 @@ namespace danhbingo.Auto
             if (token.IsCancellationRequested) return;
 
             // 4) Explore map
-            ExploreMapAndFight(hwnd, mapName, log, f, healPlayer, healPet, token);
+            ExploreMapAndFight(hwnd, mapName, log, f, healPlayer, healPet, mode, token);
         }
 
 
@@ -161,6 +163,7 @@ namespace danhbingo.Auto
     Form1 f,
     bool healPlayer,
     bool healPet,
+    AttackMode mode,
     CancellationToken token)
 
         {
@@ -172,21 +175,21 @@ namespace danhbingo.Auto
             }
 
             log($"🚶 Bắt đầu quét map: {mapName}");
-            Form1.HealIfNeeded(hwnd, healPlayer, healPet, log);
+           
 
             foreach (var p in movePoints)
             {
                 if (token.IsCancellationRequested) return;
 
                 // 1) Scan boss trước
-                if (HandleBossScan(hwnd, mapName, log, f, token))
+                if (HandleBossScan(hwnd, mapName, log, f, mode, token))
                     continue;
-
+                Form1.HealIfNeeded(hwnd, healPlayer, healPet, log);
                 // 2) Move
-                MoveToPoint(hwnd, p.x, p.y, mapName, log, f, token);
+                MoveToPoint(hwnd, p.x, p.y, mapName, log, f, mode, token);
 
                 // 3) Scan boss sau khi move
-                HandleBossScan(hwnd,mapName, log, f, token);
+                HandleBossScan(hwnd, mapName, log, f, mode, token);
             }
 
             log($"✨ Đã hoàn tất map {mapName}");
@@ -194,10 +197,11 @@ namespace danhbingo.Auto
 
 
         private static void MoveToPoint(
-     IntPtr hwnd, int x, int y,
-     string mapName,
-     Action<string> log, Form1 f,
-     CancellationToken token)
+    IntPtr hwnd, int x, int y,
+    string mapName,
+    Action<string> log, Form1 f,
+    AttackMode mode,
+    CancellationToken token)
 
         {
             Form1.CheckStop(token);
@@ -224,10 +228,11 @@ namespace danhbingo.Auto
             {
                 if (token.IsCancellationRequested) return;
                 Form1.CheckStop(token);
-                var r = f.ScanAndClickBossEx(hwnd, log, f.CurrentThreshold, mapName,token);
+                var r = f.ScanAndClickBossEx(hwnd, log, f.CurrentThreshold, mapName, mode, token);
 
                 if (r == BossClickResult.FightStarted)
                 {
+                    Form1.TryEnableAutoInGame(hwnd, log);
                     WaitAppearLoop(hwnd, Form1.CurrentPlayerAvatar, log, token);
                     return;
                 }
@@ -248,9 +253,12 @@ namespace danhbingo.Auto
         }
 
         private static bool HandleBossScan(
-      IntPtr hwnd,string mapName, Action<string> log, Form1 f, CancellationToken token)
+     IntPtr hwnd, string mapName,
+    Action<string> log, Form1 f,
+    AttackMode mode,
+    CancellationToken token)
         {
-            var r = f.ScanAndClickBossEx(hwnd, log, f.CurrentThreshold, mapName, token);
+            var r = f.ScanAndClickBossEx(hwnd, log, f.CurrentThreshold, mapName, mode, token);
 
 
             switch (r)
@@ -273,115 +281,60 @@ namespace danhbingo.Auto
 
 
 
-        // === 5️⃣ QUÉT BINGO & COMBAT ===
-        private static void ScanAndFightBingo(IntPtr hwnd, Action<string> log)
-        {
-            string bingoFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Anh");
-            var bingoFiles = Directory.GetFiles(bingoFolder, "*.png")
-                .Where(f => Path.GetFileName(f).ToLower().Contains("bingo")).ToArray();
-
-            using var frame = ImageHelper.CaptureWindowClient(hwnd);
-            bool found = false;
-
-            foreach (var f in bingoFiles)
-            {
-                using var tpl = (Bitmap)Image.FromFile(f);
-                var (pt, score) = Form1.MatchOnce(frame, tpl, 0.82);
-
-                if (pt.HasValue && score >= 0.82 && score < 0.97 &&
-     pt.Value.X > 200 && pt.Value.X < 800 &&
-     pt.Value.Y > 120 && pt.Value.Y < 550)
-                {
-                    log($"🎯 Bingo khả nghi ({Path.GetFileName(f)}) tại ({pt.Value.X},{pt.Value.Y}), score={score:F2}");
-                    Form1.ClickClient(hwnd, pt.Value.X, pt.Value.Y);
-                    Thread.Sleep(1000); // đợi phản ứng game
-
-                    // 🧠 Kiểm tra xem nhân vật có biến mất (tức là vào combat chưa)
-                    bool playerGone = PlayerDetector.WaitForPlayerDisappear(hwnd, Form1.CurrentPlayerAvatar, log, 0.80, 4000);
-
-                    if (playerGone)
-                    {
-                        log("⚔️ Vào combat thật — đang chờ nhân vật biến mất hoàn toàn...");
-                        Thread.Sleep(3000); // delay nhỏ cho ổn định
-
-                        // click nút phụ (816,353)
-                        Form1.ClickClient(hwnd, 816, 353);
-                        log("🖱️ Click nút phụ tấn công sau 3s combat.");
-
-                        // đợi player xuất hiện lại
-                        PlayerDetector.WaitForPlayerAppear(hwnd, Form1.CurrentPlayerAvatar, log, 0.80, 10000);
-                        log("✅ Combat kết thúc, nhân vật đã trở lại!");
-                    }
-                    else
-                    {
-                        log("⚠️ Click nhầm — nhân vật không biến mất, không vào trận.");
-                    }
-
-                    found = playerGone;
-                    break;
-                }
-
-            }
-        }
+      
         private static bool WaitAppearLoop(
       IntPtr hwnd,
       string avatar,
       Action<string> log,
       CancellationToken token)
         {
+            // ⭐⭐ THÊM ẢNH AUTO
+            string autoImg = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Anh", "AutoInGame.png");
+
+            const int AUTO_X = 804;
+            const int AUTO_Y = 355;
+
             while (!token.IsCancellationRequested)
             {
-                bool ok = PlayerDetector.IsPlayerVisible(hwnd, avatar, 0.80);
-                if (ok)
+                // ---- 1) đang trong trận → scan AutoInGame ----
+                if (!PlayerDetector.IsPlayerVisible(hwnd, avatar, 0.80))
                 {
-                    log("✅ Nhân vật đã xuất hiện lại!");
+                    using var frame = ImageHelper.CaptureWindowClient(hwnd);
+                    var (pt, score, _) = Form1.FindBestTemplate(frame, new[] { autoImg }, 0.60);
 
-                    // ⭐ HEAL SAU TRẬN DÙNG HealIfNeeded
-                    Form1.HealIfNeeded(
-                        hwnd,
-                       Form1.fInstance.HealPlayerOption,
-Form1.fInstance.HealPetOption,
-                        log
-                    );
+                    if (pt.HasValue)
+                    {
+                        log($"🟢 AutoInGame xuất hiện (score={score:F2}) → CLICK");
+                        Form1.ClickClient(hwnd, AUTO_X, AUTO_Y);
+                        Thread.Sleep(1000);
+                    }
 
-                    return true;
+                    Thread.Sleep(120);
+                    continue;
                 }
 
-                Thread.Sleep(200);
+                // ---- 2) nhân vật xuất hiện → hết combat ----
+                log("✅ Nhân vật đã xuất hiện lại!");
+
+                Form1.HealIfNeeded(
+                    hwnd,
+                    Form1.fInstance.HealPlayerOption,
+                    Form1.fInstance.HealPetOption,
+                    log
+                );
+
+                return true;
             }
+
             return false;
         }
 
 
-        private static string GetNextMap(string current, Form1 f)
-        {
-            var maps = f.MapList.CheckedItems.Cast<string>().ToList();
 
-            if (maps.Count == 0) return current;
-
-            int idx = maps.IndexOf(current);
-            if (idx < 0) return maps[0];
-
-            int next = (idx + 1) % maps.Count;
-            return maps[next];
-        }
+      
 
 
-        // === 6️⃣ COMBAT LOGIC ===
-        private static void HandleCombat(IntPtr hwnd, Action<string> log)
-        {
-            if (PlayerDetector.WaitForPlayerDisappear(hwnd, Form1.CurrentPlayerAvatar, log, 0.8, 8000))
-            {
-                Thread.Sleep(3000);
-                Form1.ClickClient(hwnd, 816, 353);
-                log("🖱️ Click nút phụ tấn công (sau khi player biến mất)");
-                PlayerDetector.WaitForPlayerAppear(hwnd, Form1.CurrentPlayerAvatar, log, 0.8, 15000);
-            }
-            else
-            {
-                log("⚠️ Không thấy nhân vật biến mất (có thể false match).");
-            }
-        }
+    
     }
 } 
 
