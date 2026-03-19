@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+using Point = System.Drawing.Point;
+using Size = System.Drawing.Size;
 namespace danhbingo
 {
     public partial class Form1 : Form
@@ -81,7 +83,7 @@ namespace danhbingo
 
             try
             {
-                string licenseUrl = "https://raw.githubusercontent.com/khoang1205//main/keys.txt";
+                string licenseUrl = "https://raw.githubusercontent.com/khoang1205/event/main/keys.txt";
 
                 using (HttpClient client = new HttpClient())
                 {
@@ -163,33 +165,7 @@ namespace danhbingo
             p.Controls.Add(new Label() { Text = "Chọn cửa sổ:", AutoSize = true }, 0, 0);
             p.Controls.Add(cboWindows, 1, 0);
 
-            //=========================================
           
-            //=========================================
-            var rowHwid = new FlowLayoutPanel() { FlowDirection = FlowDirection.LeftToRight, AutoSize = true };
-
-            TextBox txtHwid = new()
-            {
-                ReadOnly = true,
-                Width = 240,
-                Text = HWIDHelper.GetHWID() // Gọi class HWIDHelper lấy mã
-            };
-
-            Button btnCopyHwid = new() { Text = "Copy", Width = 80 };
-            btnCopyHwid.Click += (_, __) =>
-            {
-                if (!string.IsNullOrEmpty(txtHwid.Text))
-                {
-                    Clipboard.SetText(txtHwid.Text);
-                    MessageBox.Show("Đã copy mã HWID vào Clipboard!", "Thành công");
-                }
-            };
-
-            rowHwid.Controls.Add(txtHwid);
-            rowHwid.Controls.Add(btnCopyHwid);
-
-            p.Controls.Add(new Label() { Text = "Mã Máy (HWID):", AutoSize = true }, 0, 1);
-            p.Controls.Add(rowHwid, 1, 1);
             //=========================================
             //--------------------------
             // Threshold
@@ -276,8 +252,84 @@ namespace danhbingo
         //===========================================
         //  ✅ FORM LOAD
         //===========================================
-        void Form1_Load(object? sender, EventArgs e)
+        //===========================================
+        //  ✅ FORM LOAD (Đã thêm check bản quyền từ đầu)
+        //===========================================
+        async void Form1_Load(object? sender, EventArgs e)
         {
+            // 1. Tạm khóa toàn bộ giao diện không cho bấm linh tinh
+            this.Enabled = false;
+            lblStatus.Text = " Đang kiểm tra bản quyền...";
+
+            // 2. Tiến hành check key trên server
+            bool isLicensed = await CheckLicenseAsync();
+
+            // 3. Nếu KHÔNG có bản quyền -> Hiện Form cảnh báo giống LeoThap
+            if (!isLicensed)
+            {
+                string myHwid = HWIDHelper.GetHWID();
+
+                Form alert = new Form()
+                {
+                    Text = "Cảnh báo Bản Quyền",
+                    Size = new Size(420, 220),
+                    StartPosition = FormStartPosition.CenterScreen,
+                    FormBorderStyle = FormBorderStyle.FixedDialog,
+                    MaximizeBox = false,
+                    MinimizeBox = false,
+                    TopMost = true // Nổi lên trên cùng
+                };
+
+                Label lbl = new Label()
+                {
+                    Text = "Máy của bạn chưa được cấp phép sử dụng Tool này.\n\nVui lòng copy mã bên dưới ",
+                    Location = new Point(20, 20),
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 9, FontStyle.Regular)
+                };
+
+                TextBox txtHwid = new TextBox()
+                {
+                    Text = myHwid,
+                    Location = new Point(20, 80),
+                    Width = 360,
+                    ReadOnly = true,
+                    Font = new Font("Consolas", 10, FontStyle.Bold)
+                };
+
+                Button btnCopy = new Button()
+                {
+                    Text = "📋 Copy Mã Máy",
+                    Location = new Point(130, 120),
+                    Size = new Size(140, 35),
+                    Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                    Cursor = Cursors.Hand
+                };
+
+                btnCopy.Click += (senderObj, args) =>
+                {
+                    Clipboard.SetText(myHwid);
+                    MessageBox.Show(" Đã copy mã vào bộ nhớ tạm!\nBạn có thể dán (Ctrl+V) để gửi cho khoang.",
+                                    "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                };
+
+                alert.Controls.Add(lbl);
+                alert.Controls.Add(txtHwid);
+                alert.Controls.Add(btnCopy);
+
+                // Mở hộp thoại lên, code sẽ dừng ở đây chờ người dùng tắt
+                alert.ShowDialog();
+
+                // Người dùng tắt hộp thoại -> Đóng luôn cả Tool
+                Environment.Exit(0);
+                return;
+            }
+
+            // ========================================================
+            // 4. NẾU ĐÃ CÓ BẢN QUYỀN -> Mở khóa UI và Load dữ liệu Tool
+            // ========================================================
+            this.Enabled = true;
+
             LoadWindowList();
             LoadConfig();
             MapData.Load();
@@ -292,8 +344,10 @@ namespace danhbingo
             cboAttackMode.Items.Add("Click quanh quái");
             cboAttackMode.SelectedIndex = 0;
             ReloadImageTemplates();
+
+            lblStatus.Text = " Xác thực thành công!";
         }
-      
+
         public enum AttackMode
         {
             ClickDirect = 0,
@@ -477,6 +531,21 @@ namespace danhbingo
         //===========================================
         async Task StartAsync()
         {
+            // ==========================================
+            // 🛑 1. KIỂM TRA BẢN QUYỀN TRƯỚC KHI CHẠY
+            // ==========================================
+            btnStart.Enabled = false; // Tạm khóa nút Start tránh spam click
+            lblStatus.Text = "Đang kiểm tra bản quyền...";
+
+            bool isLicensed = await CheckLicenseAsync();
+            if (!isLicensed)
+            {
+                MessageBox.Show("Máy của bạn chưa được đăng ký bản quyền!\nVui lòng copy mã HWID ở trên.", "Lỗi Bản Quyền", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                lblStatus.Text = "❌ Chưa kích hoạt bản quyền.";
+                btnStart.Enabled = true; // Mở lại nút Start
+                return; // Dừng lập tức, không cho code bên dưới chạy
+            }
+            // ==========================================
             var runMode = CurrentAttackMode;
             Form1.GameClickHwnd = hwnd;
             IntPtr rootHwnd = hwnd;
