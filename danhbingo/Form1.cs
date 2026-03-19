@@ -1,5 +1,6 @@
 ﻿using batpet.Auto;
 using danhbingo.Auto;
+using LeoThap;
 using OpenCvSharp;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -9,6 +10,7 @@ namespace danhbingo
 {
     public partial class Form1 : Form
     {
+        void Append(string s) => BeginInvoke(() => txtLog.AppendText($"{DateTime.Now:HH:mm:ss} {s}\r\n"));
         ComboBox cboWindows = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 340 };
         TextBox txtWindow = new() { Width = 340, PlaceholderText = "Hoặc gõ tên cửa sổ (nếu không chọn ở dropdown)" };
         public bool HealPlayerOption => chkHealPlayer.Checked;
@@ -73,7 +75,43 @@ namespace danhbingo
             public double Threshold { get; set; } = 0.87;
             public string? ImageFolder { get; set; }    // ✅ thêm folder ảnh
         }
+        private async Task<bool> CheckLicenseAsync()
+        {
+            string myHwid = HWIDHelper.GetHWID();
 
+            try
+            {
+                string licenseUrl = "https://raw.githubusercontent.com/khoang1205//main/keys.txt";
+
+                using (HttpClient client = new HttpClient())
+                {
+                    // Tải toàn bộ nội dung file text về
+                    string validHwidsText = await client.GetStringAsync(licenseUrl);
+
+                    // Tách nội dung thành từng dòng riêng biệt
+                    string[] lines = validHwidsText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+                    foreach (string line in lines)
+                    {
+                        // Cắt lấy phần mã HWID đứng trước dấu "|" và xóa khoảng trắng dư thừa
+                        string hwidInFile = line.Split('|')[0].Trim();
+
+                        // So sánh chính xác tuyệt đối 2 mã với nhau (bỏ qua viết hoa/thường)
+                        if (string.Equals(hwidInFile, myHwid, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return true; // Trùng khớp hoàn toàn -> Cho chạy!
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                Append("❌ Lỗi kết nối máy chủ bản quyền.");
+                return false;
+            }
+
+            return false;
+        }
         readonly string ConfigPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
 
         CancellationTokenSource? cts;
@@ -125,7 +163,34 @@ namespace danhbingo
             p.Controls.Add(new Label() { Text = "Chọn cửa sổ:", AutoSize = true }, 0, 0);
             p.Controls.Add(cboWindows, 1, 0);
 
+            //=========================================
+          
+            //=========================================
+            var rowHwid = new FlowLayoutPanel() { FlowDirection = FlowDirection.LeftToRight, AutoSize = true };
 
+            TextBox txtHwid = new()
+            {
+                ReadOnly = true,
+                Width = 240,
+                Text = HWIDHelper.GetHWID() // Gọi class HWIDHelper lấy mã
+            };
+
+            Button btnCopyHwid = new() { Text = "Copy", Width = 80 };
+            btnCopyHwid.Click += (_, __) =>
+            {
+                if (!string.IsNullOrEmpty(txtHwid.Text))
+                {
+                    Clipboard.SetText(txtHwid.Text);
+                    MessageBox.Show("Đã copy mã HWID vào Clipboard!", "Thành công");
+                }
+            };
+
+            rowHwid.Controls.Add(txtHwid);
+            rowHwid.Controls.Add(btnCopyHwid);
+
+            p.Controls.Add(new Label() { Text = "Mã Máy (HWID):", AutoSize = true }, 0, 1);
+            p.Controls.Add(rowHwid, 1, 1);
+            //=========================================
             //--------------------------
             // Threshold
             //--------------------------

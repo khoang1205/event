@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("danhbingo")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+139de27415e087af303b1f5d27e4025299f48bd0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2e43f77e61e4d634a255b9c65f7f6d9d68495f6c")]
 [assembly: System.Reflection.AssemblyProductAttribute("danhbingo")]
 [assembly: System.Reflection.AssemblyTitleAttribute("danhbingo")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
